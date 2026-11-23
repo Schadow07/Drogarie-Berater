@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -58,15 +59,14 @@ if st.button("🔍 Beste Eigenmarke finden", type="primary", use_container_width
 
             anfrage = f"Markt-Auswahl: {markt}\nProblem/Wunsch des Kunden: {problem}"
 
-            # Probiert erst das Hauptmodell und weicht bei 503-Überlastung automatisch aus
-            modelle = ["gemini-3.8-flash", "gemini-3.8-flash-lite"]
             antwort_text = None
             letzter_fehler = None
 
-            for modell_name in modelle:
+            # Bis zu 3 Versuche mit kurzer Pause bei Überlastung (503)
+            for versuch in range(3):
                 try:
                     response = client.models.generate_content(
-                        model=modell_name,
+                        model="gemini-3.8-flash",
                         contents=anfrage,
                         config=types.GenerateContentConfig(
                             system_instruction=system_anweisung,
@@ -77,7 +77,7 @@ if st.button("🔍 Beste Eigenmarke finden", type="primary", use_container_width
                     break
                 except Exception as e:
                     letzter_fehler = e
-                    continue
+                    time.sleep(2)
 
             if antwort_text:
                 st.divider()
@@ -85,4 +85,4 @@ if st.button("🔍 Beste Eigenmarke finden", type="primary", use_container_width
                 with st.container(border=True):
                     st.markdown(antwort_text)
             else:
-                st.error(f"Die Google-Server sind gerade stark ausgelastet. Bitte versuche es in ein paar Sekunden erneut. ({letzter_fehler})")
+                st.error(f"Die Google-Server sind gerade kurz ausgelastet. Bitte klicke gleich noch einmal auf den Button. ({letzter_fehler})")
